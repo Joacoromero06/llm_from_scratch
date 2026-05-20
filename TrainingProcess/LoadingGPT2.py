@@ -5,40 +5,42 @@ Created on Thu Jan 15 21:01:53 2026
 
 @author: joaco
 """
-
 import urllib.request
-url = (
-"https://raw.githubusercontent.com/rasbt/"
-"LLMs-from-scratch/main/ch05/"
-"01_main-chapter-code/gpt_download.py"
-)
-filename = url.split('/')[-1]
-urllib.request.urlretrieve(url, filename)
+if __name__ == "__main__":
+    url = (
+    "https://raw.githubusercontent.com/rasbt/"
+    "LLMs-from-scratch/main/ch05/"
+    "01_main-chapter-code/gpt_download.py"
+    )
+    filename = url.split('/')[-1]
+    urllib.request.urlretrieve(url, filename)
 
 from gpt_download import download_and_load_gpt2
-settings, params = download_and_load_gpt2(model_size="124M", models_dir="gpt2")
+if __name__ == "__main__":
+    settings, params = download_and_load_gpt2(model_size="124M", models_dir="gpt2")
 
 #%%
 import os, sys
-abs_path = os.path.abspath(__file__)
-cname = os.path.dirname(abs_path)
-os.chdir(cname)
+#abs_path = os.path.abspath(__file__)
+#cname = os.path.dirname(abs_path)
+#os.chdir(cname)
 
 # %%
 
 # 1. Get the directory where the current script is located
-current_dir = os.path.dirname(os.path.abspath(__file__))
+#current_dir = os.path.dirname(os.path.abspath(__file__))
 
 # 2. Get the parent directory (go up one level)
-parent_dir = os.path.dirname(current_dir)
+#parent_dir = os.path.dirname(current_dir)
 
 # 3. Add the parent directory to sys.path
-sys.path.append(parent_dir)
+#sys.path.append(parent_dir)
 
 
 # %%
-print("params:", params.keys())
-print("settings:", settings)
+if __name__ == "__main__":
+    print("params:", params.keys())
+    print("settings:", settings)
 
 # Distinct configs depending on model version
 model_configs = {
@@ -62,13 +64,14 @@ GPT_CONFIG_124M = {
 #%%
 
 from GPT_Classes import GPTModel
-model_name = "gpt2-small (124M)"
-NEW_CONFIG = GPT_CONFIG_124M.copy()
-NEW_CONFIG.update(model_configs[model_name])
-NEW_CONFIG.update({"context_length": 1024})
-NEW_CONFIG.update({"qkv_bias": True})
-gpt = GPTModel(NEW_CONFIG)
-gpt.eval()
+if __name__ == "__main__":
+    model_name = "gpt2-small (124M)"
+    NEW_CONFIG = GPT_CONFIG_124M.copy()
+    NEW_CONFIG.update(model_configs[model_name])
+    NEW_CONFIG.update({"context_length": 1024})
+    NEW_CONFIG.update({"qkv_bias": True})
+    gpt = GPTModel(NEW_CONFIG)
+    gpt.eval()
 
 # %%
 from torch import nn
@@ -77,7 +80,13 @@ import numpy as np
 
 def assign(left, right):
     if left.shape != right.shape:
-        raise ValueError("Mismatch error. Left {left.shape} ,Right {right.shape}. ")
+        raise ValueError(
+            f"Shape mismatch!\n"
+            f"  Model expects: {left.shape}\n"
+            f"  GPT2 provides: {right.shape}\n"
+            f"  Left type: {type(left)}\n"
+            f"  Right type: {type(right)}"
+        )
     return nn.Parameter(torch.tensor(right))
 
 # params: dict_keys(['blocks', 'b', 'g', 'wpe', 'wte'])
@@ -152,33 +161,36 @@ def load_weights2gpt(gpt:GPTModel, params):
     gpt.final_norm.shift = assign(gpt.final_norm.shift, params["b"])
     gpt.out_head.weight = gpt.tok_emb.weight
 # %%
-torch.manual_seed(123)
-device = torch.device("cpu")
-load_weights2gpt(gpt, params)
-gpt.to(device)
-from Training_Generating import generate, text2IDs, IDs2text
+if __name__ == "__main__":
+    torch.manual_seed(123)
+    device = torch.device("cpu")
+    load_weights2gpt(gpt, params)
+    gpt.to(device)
+#from Training_Generating import generate, text2IDs, IDs2text
 import tiktoken; T = tiktoken.get_encoding("gpt2")
-toks = generate(M=gpt, 
-                idx=text2IDs("the sum of 2 + 2 is: ", T), 
-                n_generate=25, 
-                context_size=NEW_CONFIG["context_length"],
-                top_k=50,
-                temperature=0.4)
-print(IDs2text(toks, T))
-# %%   
-# Check the first Attention Layer Query Weights
-print("Model Wq mean:", gpt.trf_blocks[0].att.Wq.weight.mean().item())
-print("Model Wq std: ", gpt.trf_blocks[0].att.Wq.weight.std().item())
+if __name__ == "__main__":
+    toks = generate(M=gpt, 
+                    idx=text2IDs("the sum of 2 + 2 is: ", T), 
+                    n_generate=25, 
+                    context_size=NEW_CONFIG["context_length"],
+                    top_k=50,
+                    temperature=0.4)
+    print(IDs2text(toks, T))
+    # %%   
+    # Check the first Attention Layer Query Weights
+    print("Model Wq mean:", gpt.trf_blocks[0].att.Wq.weight.mean().item())
+    print("Model Wq std: ", gpt.trf_blocks[0].att.Wq.weight.std().item())
 
-# Compare with raw params (Need to manually split to compare)
-q_w_raw, _, _ = np.split(params["blocks"][0]["attn"]["c_attn"]["w"], 3, axis=-1)
-print("Param Wq mean:", q_w_raw.mean())
-print("Param Wq std: ", q_w_raw.std())
+    # Compare with raw params (Need to manually split to compare)
+
+    q_w_raw, _, _ = np.split(params["blocks"][0]["attn"]["c_attn"]["w"], 3, axis=-1)
+    print("Param Wq mean:", q_w_raw.mean())
+    print("Param Wq std: ", q_w_raw.std())
 
 # %%
 # import loaders, variables defined in other file
-from Lecture5_2 import train_loader, val_loader
-from Training_Generating import train_model1, plot_losses
+#from Lecture5_2 import train_loader, val_loader
+#from Training_Generating import train_model1, plot_losses
 
 if __name__ == "__main__":
     OPT = torch.optim.AdamW(gpt.parameters(), lr=0.0004, weight_decay=0.1)

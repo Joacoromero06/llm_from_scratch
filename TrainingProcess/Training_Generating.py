@@ -58,7 +58,7 @@ def gen_show_sample(M, T, D, text_eg):
     # Row of pos embedding size, is the max context length or n° tokens M can handle
     context_size = M.pos_emb.weight.shape[0]
     
-    in_ids = text2IDs(text_eg, T)
+    in_ids = text2IDs(text_eg, T).to(D)
     with torch.no_grad():
         out_ids = generate_text1(M, in_ids, 
                         n_tokens_target=50, window_size=context_size)
